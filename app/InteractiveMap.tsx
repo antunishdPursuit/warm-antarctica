@@ -52,9 +52,9 @@ const globalOceanBands = [
 ] as [number, number][][];
 
 const newYorkWaterLevels = [
-  { level: "low", coordinates: [[-73.15, 40.05], [-72.1, 40.1], [-71.05, 40.05]] },
-  { level: "middle", coordinates: [[-73.15, 40.5], [-72.1, 40.55], [-71.05, 40.5]] },
-  { level: "high", coordinates: [[-73.15, 40.95], [-72.1, 41], [-71.05, 40.95]] },
+  { level: "low", coordinates: [[-82, 27], [-78, 31], [-74.5, 35], [-71, 38.8], [-66, 42]] },
+  { level: "middle", coordinates: [[-84, 28.5], [-80, 33], [-76, 37], [-72.5, 40.2], [-68, 43]] },
+  { level: "high", coordinates: [[-86, 29], [-82, 34], [-78, 38], [-74, 40.7], [-69, 43.5]] },
 ] as { level: "low" | "middle" | "high"; coordinates: [number, number][] }[];
 
 const regionalWaterPoints: Record<ShelfRegion, [number, number]> = {
@@ -231,7 +231,7 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       // This local glow marks below-shelf ocean heat. It does not mean the whole continent is warming in the same way.
       instance.addLayer({ id: "ice-shelf-warm-zone", type: "circle", source: "ice-shelf-heat", layout: { visibility: "none" }, paint: { "circle-radius": 38, "circle-color": "#ffb35e", "circle-opacity": 0.3, "circle-blur": 0.82 } });
       instance.addLayer({ id: "ice-shelf-heat-halo", type: "circle", source: "ice-shelf-heat", layout: { visibility: "none" }, paint: { "circle-radius": 13, "circle-color": "#ffb35e", "circle-opacity": 0.72, "circle-stroke-color": "#ffe0a8", "circle-stroke-width": 1 } });
-      // These fixed marks are a local water-level cue, not a flood boundary, forecast, or route from Antarctica.
+      // These long illustrative lines pulse in sequence as a local water-level cue, not a flood boundary, forecast, or route from Antarctica.
       instance.addSource("new-york-water-cue", { type: "geojson", data: { type: "FeatureCollection", features: newYorkWaterLevels.map((waterLevel) => ({ type: "Feature", properties: { level: waterLevel.level }, geometry: { type: "LineString", coordinates: waterLevel.coordinates } })) } });
       instance.addLayer({ id: "new-york-water-glow", type: "line", source: "new-york-water-cue", layout: { visibility: "none" }, paint: { "line-color": "#62ddec", "line-opacity": 0.24, "line-width": 11, "line-blur": 5 } });
       instance.addLayer({ id: "new-york-water-line", type: "line", source: "new-york-water-cue", layout: { visibility: "none" }, paint: { "line-color": "#c4fbff", "line-opacity": 0.62, "line-width": 2.7 } });

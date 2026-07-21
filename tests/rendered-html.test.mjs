@@ -26,6 +26,11 @@ test("journey data keeps one source per stage and a shared duration", async () =
     readFile(new URL("../app/InteractiveMap.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(journey, /export const STAGE_DURATION = 5000/);
+  assert.match(journey, /export const SHELF_STAGE_DURATION = 3000/);
+  assert.match(journey, /guidedJourneyStages/);
+  assert.match(journey, /label: "Amundsen Sea", duration: SHELF_STAGE_DURATION, region: "amundsen"/);
+  assert.match(journey, /label: "George VI Ice Shelf", duration: SHELF_STAGE_DURATION, region: "bellingshausen"/);
+  assert.match(journey, /label: "Totten Glacier", duration: SHELF_STAGE_DURATION, region: "totten"/);
   assert.ok((journey.match(/sourceUrl: "https/g) ?? []).length >= 5);
   assert.match(journey, /id: "water"[\s\S]*id: "antarctica"[\s\S]*id: "ocean"[\s\S]*id: "newyork"/);
   assert.match(journey, /Warm deep water reaches George VI Ice Shelf/);
@@ -39,7 +44,7 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /new-york-water-cue/);
   assert.match(map, /new-york-water-pulse/);
   assert.match(map, /newYorkWaterLevelFeatures/);
-  assert.match(map, /local water-level cue, not a flood boundary, forecast, or route from Antarctica/);
+  assert.match(map, /long illustrative lines pulse in sequence as a local water-level cue, not a flood boundary, forecast, or route from Antarctica/);
   assert.match(map, /minZoom: 0\.85/);
   assert.match(map, /maxZoom: 4\.8/);
   assert.match(map, /ice-shelf-warm-zone/);
@@ -56,6 +61,8 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /not a flood boundary, forecast, or route from Antarctica/);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /journeyElapsed/);
+  assert.match(page, /GUIDED_JOURNEY_DURATION/);
+  assert.match(page, /journeyStageIndex/);
   assert.match(page, /Resume journey/);
   assert.match(page, /Restart journey/);
   assert.match(page, /window\.setInterval/);
