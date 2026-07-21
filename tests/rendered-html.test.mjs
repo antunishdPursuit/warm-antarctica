@@ -26,6 +26,11 @@ test("journey data keeps one source per stage and a shared duration", async () =
     readFile(new URL("../app/InteractiveMap.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(journey, /export const STAGE_DURATION = 5000/);
+  assert.match(journey, /export const SHELF_STAGE_DURATION = 3000/);
+  assert.match(journey, /guidedJourneyStages/);
+  assert.match(journey, /label: "Amundsen Sea", duration: SHELF_STAGE_DURATION, region: "amundsen"/);
+  assert.match(journey, /label: "George VI Ice Shelf", duration: SHELF_STAGE_DURATION, region: "bellingshausen"/);
+  assert.match(journey, /label: "Totten Glacier", duration: SHELF_STAGE_DURATION, region: "totten"/);
   assert.ok((journey.match(/sourceUrl: "https/g) ?? []).length >= 5);
   assert.match(journey, /id: "water"[\s\S]*id: "antarctica"[\s\S]*id: "ocean"[\s\S]*id: "newyork"/);
   assert.match(journey, /Warm deep water reaches George VI Ice Shelf/);
@@ -37,9 +42,27 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /\}, \[\]\);/);
   assert.match(map, /prefers-reduced-motion: reduce/);
   assert.match(map, /new-york-water-cue/);
-  assert.match(map, /not a flood boundary or forecast/);
+  assert.match(map, /new-york-water-pulse/);
+  assert.match(map, /newYorkWaterLevelFeatures/);
+  assert.match(map, /long illustrative lines pulse in sequence as a local water-level cue, not a flood boundary, forecast, or route from Antarctica/);
+  assert.match(map, /minZoom: 0\.85/);
+  assert.match(map, /maxZoom: 4\.8/);
+  assert.match(map, /ice-shelf-warm-zone/);
+  assert.match(map, /not mean the whole continent is warming in the same way/);
+  assert.match(map, /global-ocean-band-pulses/);
+  assert.match(map, /ringPulseFeatures/);
+  assert.match(map, /pulse from inner to outer/);
+  assert.match(map, /const pulseIndex = paths\.length - 1 - index/);
+  assert.match(map, /not measured currents or a route to New York/);
+  assert.match(map, /handleStoryScroll/);
+  assert.match(map, /map-labels/);
+  assert.match(map, /Amundsen Sea/);
+  assert.match(map, /New York City/);
+  assert.match(map, /not a flood boundary, forecast, or route from Antarctica/);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /journeyElapsed/);
+  assert.match(page, /GUIDED_JOURNEY_DURATION/);
+  assert.match(page, /journeyStageIndex/);
   assert.match(page, /Resume journey/);
   assert.match(page, /Restart journey/);
   assert.match(page, /window\.setInterval/);
@@ -47,6 +70,12 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /Map display note/);
   assert.match(page, /globe-map rendering limit/);
   assert.doesNotMatch(page, /render-note/);
+  assert.match(page, /What directly adds water to the global ocean/);
+  assert.match(page, /Grounded ice moving into the sea/);
+  assert.match(page, /Quick check/);
+  assert.match(page, /Story mode/);
+  assert.match(page, /setCheckOpen\(true\)/);
+  assert.match(page, /active === "water" && <section className="shelf-compare"/);
 });
 
 test("guided Amundsen particles stay local and respect reduced motion", async () => {
@@ -59,4 +88,5 @@ test("guided Amundsen particles stay local and respect reduced motion", async ()
   assert.match(map, /layers\.warm/);
   assert.match(map, /layers\.ice/);
   assert.match(map, /layers\.global/);
+  assert.match(map, /pulseProgress = \(pulseProgress \+ 0\.018\) % 1/);
 });

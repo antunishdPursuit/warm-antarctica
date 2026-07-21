@@ -1,6 +1,7 @@
 import type { StopId } from "./InteractiveMap";
 
 export const STAGE_DURATION = 5000;
+export const SHELF_STAGE_DURATION = 3000;
 
 export type JourneyStop = {
   id: StopId;
@@ -13,6 +14,33 @@ export type JourneyStop = {
 };
 
 export type ShelfRegion = "amundsen" | "bellingshausen" | "totten";
+
+export type GuidedJourneyStage = {
+  id: StopId;
+  label: string;
+  duration: number;
+  region?: ShelfRegion;
+};
+
+export const guidedJourneyStages: GuidedJourneyStage[] = [
+  { id: "water", label: "Amundsen Sea", duration: SHELF_STAGE_DURATION, region: "amundsen" },
+  { id: "water", label: "George VI Ice Shelf", duration: SHELF_STAGE_DURATION, region: "bellingshausen" },
+  { id: "water", label: "Totten Glacier", duration: SHELF_STAGE_DURATION, region: "totten" },
+  { id: "antarctica", label: "Antarctica", duration: STAGE_DURATION },
+  { id: "ocean", label: "Global ocean", duration: STAGE_DURATION },
+  { id: "newyork", label: "New York", duration: STAGE_DURATION },
+];
+
+export const GUIDED_JOURNEY_DURATION = guidedJourneyStages.reduce((total, stage) => total + stage.duration, 0);
+
+export function getGuidedJourneyStageIndex(elapsed: number) {
+  let passed = 0;
+  for (const [index, stage] of guidedJourneyStages.entries()) {
+    passed += stage.duration;
+    if (elapsed < passed) return index;
+  }
+  return guidedJourneyStages.length - 1;
+}
 
 export const journeyStops: JourneyStop[] = [
   {
