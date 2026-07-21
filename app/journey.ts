@@ -12,6 +12,8 @@ export type JourneyStop = {
   sourceUrl: string;
 };
 
+export type ShelfRegion = "amundsen" | "bellingshausen";
+
 export const journeyStops: JourneyStop[] = [
   {
     id: "water",
@@ -50,3 +52,14 @@ export const journeyStops: JourneyStop[] = [
     sourceUrl: "https://oceanservice.noaa.gov/facts/sealevel.html",
   },
 ];
+
+export function getJourneyStops(region: ShelfRegion): JourneyStop[] {
+  if (region === "amundsen") return journeyStops;
+  return journeyStops.map((stop) => stop.id === "water" ? {
+    ...stop,
+    title: "Warm deep water reaches George VI Ice Shelf.",
+    text: "In the eastern Bellingshausen Sea, Circumpolar Deep Water can flood the continental shelf and form the main inflow beneath George VI Ice Shelf.",
+    sourceName: "BAS: George VI Ice Shelf",
+    sourceUrl: "https://www.bas.ac.uk/data/our-data/publication/circulation-and-melting-beneath-george-vi-ice-shelf-antarctica-2/",
+  } : stop);
+}

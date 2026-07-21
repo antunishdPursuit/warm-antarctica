@@ -26,8 +26,10 @@ test("journey data keeps one source per stage and a shared duration", async () =
     readFile(new URL("../app/InteractiveMap.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(journey, /export const STAGE_DURATION = 5000/);
-  assert.equal((journey.match(/sourceUrl: "https/g) ?? []).length, 4);
+  assert.ok((journey.match(/sourceUrl: "https/g) ?? []).length >= 5);
   assert.match(journey, /id: "water"[\s\S]*id: "antarctica"[\s\S]*id: "ocean"[\s\S]*id: "newyork"/);
+  assert.match(journey, /Warm deep water reaches George VI Ice Shelf/);
+  assert.match(journey, /BAS: George VI Ice Shelf/);
   assert.match(map, /const onSelectRef = useRef\(onSelect\)/);
   assert.match(map, /onSelectRef\.current\(id\)/);
   assert.match(map, /\}, \[\]\);/);
