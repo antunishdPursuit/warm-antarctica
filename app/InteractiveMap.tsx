@@ -97,7 +97,9 @@ function ringPulseFeatures(paths: [number, number][][], progress: number) {
   return {
     type: "FeatureCollection" as const,
     features: paths.map((coordinates, index) => {
-      const phase = progress * paths.length - index;
+      // The stored bands run outer to inner, so reverse their pulse order.
+      const pulseIndex = paths.length - 1 - index;
+      const phase = progress * paths.length - pulseIndex;
       const pulse = phase >= 0 && phase < 1 ? Math.sin(Math.PI * phase) : 0;
       return { type: "Feature" as const, properties: { pulse }, geometry: { type: "LineString" as const, coordinates } };
     }),

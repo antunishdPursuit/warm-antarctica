@@ -40,6 +40,7 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /global-ocean-band-pulses/);
   assert.match(map, /ringPulseFeatures/);
   assert.match(map, /pulse from inner to outer/);
+  assert.match(map, /const pulseIndex = paths\.length - 1 - index/);
   assert.match(map, /not measured currents or a route to New York/);
   assert.match(map, /handleStoryScroll/);
   assert.match(map, /map-labels/);
