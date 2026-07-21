@@ -93,15 +93,14 @@ function particleFeatures(paths: [number, number][][], progress: number) {
   };
 }
 
-function bandPulseFeatures(paths: [number, number][][], progress: number) {
+function ringPulseFeatures(paths: [number, number][][], progress: number) {
   return {
     type: "FeatureCollection" as const,
-    features: paths.flatMap((path, index) => [0, 0.48].map((offset) => {
-      const start = (progress + index * 0.13 + offset) % 1;
-      const end = Math.min(start + 0.22, 1);
-      const steps = 8;
-      return { type: "Feature" as const, properties: {}, geometry: { type: "LineString" as const, coordinates: Array.from({ length: steps }, (_, step) => pointAlongPath(path, start + (end - start) * (step / (steps - 1)))) } };
-    })),
+    features: paths.map((coordinates, index) => {
+      const phase = progress * paths.length - index;
+      const pulse = phase >= 0 && phase < 1 ? Math.sin(Math.PI * phase) : 0;
+      return { type: "Feature" as const, properties: { pulse }, geometry: { type: "LineString" as const, coordinates } };
+    }),
   };
 }
 
@@ -178,10 +177,10 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       instance.addSource("global-ocean-bands", { type: "geojson", data: { type: "FeatureCollection", features: globalOceanBands.map((coordinates) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } })) } });
       instance.addLayer({ id: "global-ocean-band-glow", type: "line", source: "global-ocean-bands", layout: { visibility: "none" }, paint: { "line-color": "#5de0f4", "line-opacity": 0.24, "line-width": 15, "line-blur": 8 } });
       instance.addLayer({ id: "global-ocean-band-core", type: "line", source: "global-ocean-bands", layout: { visibility: "none" }, paint: { "line-color": "#9af5ff", "line-opacity": 0.62, "line-width": 2.2, "line-blur": 1 } });
-      // These pulses travel along the existing bands as a visual cue for global connection, not measured currents or a route to New York.
-      instance.addSource("global-ocean-band-pulses", { type: "geojson", data: bandPulseFeatures(globalOceanBands, 0) });
-      instance.addLayer({ id: "global-ocean-band-pulse-glow", type: "line", source: "global-ocean-band-pulses", layout: { visibility: "none" }, paint: { "line-color": "#65e3f3", "line-opacity": 0.42, "line-width": 13, "line-blur": 7 } });
-      instance.addLayer({ id: "global-ocean-band-pulse-core", type: "line", source: "global-ocean-band-pulses", layout: { visibility: "none" }, paint: { "line-color": "#e2fdff", "line-opacity": 0.96, "line-width": 2.9 } });
+      // The fixed rings pulse from inner to outer as a visual cue for global connection, not measured currents or a route to New York.
+      instance.addSource("global-ocean-band-pulses", { type: "geojson", data: ringPulseFeatures(globalOceanBands, 0) });
+      instance.addLayer({ id: "global-ocean-band-pulse-glow", type: "line", source: "global-ocean-band-pulses", layout: { visibility: "none" }, paint: { "line-color": "#65e3f3", "line-opacity": ["get", "pulse"], "line-width": 13, "line-blur": 7 } });
+      instance.addLayer({ id: "global-ocean-band-pulse-core", type: "line", source: "global-ocean-band-pulses", layout: { visibility: "none" }, paint: { "line-color": "#e2fdff", "line-opacity": ["get", "pulse"], "line-width": 2.9 } });
       instance.addSource("amundsen-flow", { type: "geojson", data: { type: "FeatureCollection", features: amundsenPaths.map((coordinates) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } })) } });
       instance.addLayer({ id: "amundsen-flow-glow", type: "line", source: "amundsen-flow", layout: { visibility: "none" }, paint: { "line-color": "#ffb85e", "line-opacity": 0.34, "line-width": 7, "line-blur": 3 } });
       instance.addLayer({ id: "amundsen-flow-line", type: "line", source: "amundsen-flow", layout: { visibility: "none" }, paint: { "line-color": "#ffd28c", "line-opacity": 0.9, "line-width": 2.5, "line-dasharray": [1, 1.4] } });
@@ -231,7 +230,7 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
     const pulseTimer = reducedMotion.current ? undefined : window.setInterval(() => {
       if (activeRef.current !== "ocean" || !layersRef.current.global) return;
       pulseProgress = (pulseProgress + 0.012) % 1;
-      (instance.getSource("global-ocean-band-pulses") as maplibregl.GeoJSONSource | undefined)?.setData(bandPulseFeatures(globalOceanBands, pulseProgress));
+      (instance.getSource("global-ocean-band-pulses") as maplibregl.GeoJSONSource | undefined)?.setData(ringPulseFeatures(globalOceanBands, pulseProgress));
     }, 100);
     let lastScrollStep = 0;
     const handleStoryScroll = (event: WheelEvent) => {
