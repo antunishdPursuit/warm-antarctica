@@ -1,4 +1,4 @@
-# Antarctica: Connected
+# Warm Antarctica
 
 An interactive map that explains the link between warm water near Antarctic ice shelves, grounded ice loss, the global ocean, and local sea-level effects in New York.
 

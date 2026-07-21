@@ -9,11 +9,11 @@ async function render() {
   return worker.fetch(new Request("http://localhost/", { headers: { accept: "text/html" } }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} });
 }
 
-test("server-renders Antarctica Connected and its first journey step", async () => {
+test("server-renders Warm Antarctica and its first journey step", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /<title>Antarctica: Connected<\/title>/i);
+  assert.match(html, /<title>Warm Antarctica<\/title>/i);
   assert.match(html, /Warm water reaches the Amundsen Sea shelf/i);
   assert.match(html, /Play journey/i);
   assert.match(html, /NASA: Pine Island Glacier/i);
@@ -44,6 +44,9 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /Restart journey/);
   assert.match(page, /window\.setInterval/);
   assert.match(page, /aria-current=\{active === stop\.id \? "step" : undefined\}/);
+  assert.match(page, /Map display note/);
+  assert.match(page, /globe-map rendering limit/);
+  assert.doesNotMatch(page, /render-note/);
 });
 
 test("guided Amundsen particles stay local and respect reduced motion", async () => {
