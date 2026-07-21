@@ -41,3 +41,11 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /window\.setInterval/);
   assert.match(page, /aria-current=\{active === stop\.id \? "step" : undefined\}/);
 });
+
+test("guided Amundsen particles stay local and respect reduced motion", async () => {
+  const map = await readFile(new URL("../app/InteractiveMap.tsx", import.meta.url), "utf8");
+  assert.match(map, /amundsen-particles/);
+  assert.match(map, /activeRef\.current !== "water" && activeRef\.current !== "antarctica"/);
+  assert.match(map, /reducedMotion\.current \? undefined : window\.setInterval/);
+  assert.match(map, /These particles explain the sourced local path; they are not live current measurements/);
+});
