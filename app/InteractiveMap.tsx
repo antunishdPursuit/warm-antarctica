@@ -6,6 +6,7 @@ import { feature } from "topojson-client";
 import land from "world-atlas/land-50m.json";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { ShelfRegion } from "./journey";
+import currentField from "./data/southern-ocean-currents.json";
 
 export type StopId = "antarctica" | "water" | "ocean" | "newyork";
 export type StoryLayers = { warm: boolean; ice: boolean; global: boolean };
@@ -123,7 +124,18 @@ function newYorkWaterLevelFeatures(progress: number) {
   };
 }
 
-function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, layers: StoryLayers) {
+function currentParticleFeatures(progress: number) {
+  return {
+    type: "FeatureCollection" as const,
+    features: currentField.vectors.filter((_, index) => index % 11 === 0).map(([longitude, latitude, eastward, northward], index) => {
+      const phase = (progress + index * 0.173) % 1;
+      // Each short path follows the sampled daily velocity direction. Its visual pace is intentionally accelerated.
+      return { type: "Feature" as const, properties: {}, geometry: { type: "Point" as const, coordinates: [longitude + eastward * phase * 9, latitude + northward * phase * 9] } };
+    }),
+  };
+}
+
+function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, layers: StoryLayers, currentsMode: boolean) {
   const showLocalFlow = layers.warm && (active === "water" || active === "antarctica");
   const showAmundsen = showLocalFlow && region === "amundsen";
   const showBellingshausen = showLocalFlow && region === "bellingshausen";
@@ -143,10 +155,12 @@ function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, lay
   const showShelfWarmth = layers.ice && active === "antarctica";
   instance.setLayoutProperty("ice-shelf-warm-zone", "visibility", showShelfWarmth ? "visible" : "none");
   instance.setLayoutProperty("ice-shelf-heat-halo", "visibility", showShelfWarmth ? "visible" : "none");
-  instance.setLayoutProperty("global-ocean-band-glow", "visibility", layers.global && active === "ocean" ? "visible" : "none");
-  instance.setLayoutProperty("global-ocean-band-core", "visibility", layers.global && active === "ocean" ? "visible" : "none");
-  instance.setLayoutProperty("global-ocean-band-pulse-glow", "visibility", layers.global && active === "ocean" ? "visible" : "none");
-  instance.setLayoutProperty("global-ocean-band-pulse-core", "visibility", layers.global && active === "ocean" ? "visible" : "none");
+  instance.setLayoutProperty("global-ocean-band-glow", "visibility", !currentsMode && layers.global && active === "ocean" ? "visible" : "none");
+  instance.setLayoutProperty("global-ocean-band-core", "visibility", !currentsMode && layers.global && active === "ocean" ? "visible" : "none");
+  instance.setLayoutProperty("global-ocean-band-pulse-glow", "visibility", !currentsMode && layers.global && active === "ocean" ? "visible" : "none");
+  instance.setLayoutProperty("global-ocean-band-pulse-core", "visibility", !currentsMode && layers.global && active === "ocean" ? "visible" : "none");
+  instance.setLayoutProperty("southern-ocean-current-particle-glow", "visibility", currentsMode ? "visible" : "none");
+  instance.setLayoutProperty("southern-ocean-current-particle-core", "visibility", currentsMode ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-glow", "visibility", layers.global && active === "newyork" ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-line", "visibility", layers.global && active === "newyork" ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-pulse-glow", "visibility", layers.global && active === "newyork" ? "visible" : "none");
@@ -155,7 +169,7 @@ function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, lay
   instance.setFilter("map-labels", ["any", ...visibleLabels.map((label) => ["==", ["get", "name"], label.properties.name])] as maplibregl.FilterSpecification);
 }
 
-export function InteractiveMap({ active, region, layers, storyMode, onSelect, onStoryStep }: { active: StopId; region: ShelfRegion; layers: StoryLayers; storyMode: boolean; onSelect: (id: StopId) => void; onStoryStep: (direction: -1 | 1) => void }) {
+export function InteractiveMap({ active, region, layers, storyMode, currentsMode, onSelect, onStoryStep }: { active: StopId; region: ShelfRegion; layers: StoryLayers; storyMode: boolean; currentsMode: boolean; onSelect: (id: StopId) => void; onStoryStep: (direction: -1 | 1) => void }) {
   const node = useRef<HTMLDivElement>(null);
   const map = useRef<Map | null>(null);
   const onSelectRef = useRef(onSelect);
@@ -163,6 +177,7 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
   const regionRef = useRef(region);
   const layersRef = useRef(layers);
   const storyModeRef = useRef(storyMode);
+  const currentsModeRef = useRef(currentsMode);
   const onStoryStepRef = useRef(onStoryStep);
   const reducedMotion = useRef(false);
 
@@ -171,6 +186,7 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
   useEffect(() => { regionRef.current = region; }, [region]);
   useEffect(() => { layersRef.current = layers; }, [layers]);
   useEffect(() => { storyModeRef.current = storyMode; }, [storyMode]);
+  useEffect(() => { currentsModeRef.current = currentsMode; }, [currentsMode]);
   useEffect(() => { onStoryStepRef.current = onStoryStep; }, [onStoryStep]);
 
   useEffect(() => {
@@ -181,7 +197,7 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf", sources: {}, layers: [{ id: "ocean", type: "background", paint: { "background-color": "#061b2b" } }] },
       center: [0, -55],
       zoom: 1.2,
-      minZoom: 0.85,
+        minZoom: 1,
       maxZoom: 4.8,
       pitch: 16,
       attributionControl: false,
@@ -206,6 +222,10 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       instance.addSource("global-ocean-band-pulses", { type: "geojson", data: ringPulseFeatures(globalOceanBands, 0) });
       instance.addLayer({ id: "global-ocean-band-pulse-glow", type: "line", source: "global-ocean-band-pulses", layout: { visibility: "none" }, paint: { "line-color": "#65e3f3", "line-opacity": ["get", "pulse"], "line-width": 13, "line-blur": 7 } });
       instance.addLayer({ id: "global-ocean-band-pulse-core", type: "line", source: "global-ocean-band-pulses", layout: { visibility: "none" }, paint: { "line-color": "#e2fdff", "line-opacity": ["get", "pulse"], "line-width": 2.9 } });
+      // These particles use a fixed Copernicus daily current field at 15.81 m. They do not show flow below ice shelves.
+      instance.addSource("southern-ocean-current-particles", { type: "geojson", data: currentParticleFeatures(0) });
+      instance.addLayer({ id: "southern-ocean-current-particle-glow", type: "circle", source: "southern-ocean-current-particles", layout: { visibility: "none" }, paint: { "circle-radius": 7, "circle-color": "#5de0f4", "circle-opacity": 0.34, "circle-blur": 0.75 } });
+      instance.addLayer({ id: "southern-ocean-current-particle-core", type: "circle", source: "southern-ocean-current-particles", layout: { visibility: "none" }, paint: { "circle-radius": 1.9, "circle-color": "#d9fcff", "circle-opacity": 0.9 } });
       instance.addSource("amundsen-flow", { type: "geojson", data: { type: "FeatureCollection", features: amundsenPaths.map((coordinates) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } })) } });
       instance.addLayer({ id: "amundsen-flow-glow", type: "line", source: "amundsen-flow", layout: { visibility: "none" }, paint: { "line-color": "#ffb85e", "line-opacity": 0.34, "line-width": 7, "line-blur": 3 } });
       instance.addLayer({ id: "amundsen-flow-line", type: "line", source: "amundsen-flow", layout: { visibility: "none" }, paint: { "line-color": "#ffd28c", "line-opacity": 0.9, "line-width": 2.5, "line-dasharray": [1, 1.4] } });
@@ -241,12 +261,13 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       instance.on("click", "hotspot-core", (event) => { const id = event.features?.[0]?.properties?.id as StopId | undefined; if (id) onSelectRef.current(id); });
       instance.on("mouseenter", "hotspot-core", () => { instance.getCanvas().style.cursor = "pointer"; });
       instance.on("mouseleave", "hotspot-core", () => { instance.getCanvas().style.cursor = ""; });
-      setStageVisuals(instance, activeRef.current, regionRef.current, layersRef.current);
+      setStageVisuals(instance, activeRef.current, regionRef.current, layersRef.current, currentsModeRef.current);
       instance.flyTo({ ...views.water, duration: reducedMotion.current ? 0 : views.water.duration });
     });
     let particleProgress = 0;
     let pulseProgress = 0;
     let newYorkPulseProgress = 0;
+    let currentParticleProgress = 0;
     const particleTimer = reducedMotion.current ? undefined : window.setInterval(() => {
       if (activeRef.current !== "water" && activeRef.current !== "antarctica") return;
       particleProgress = (particleProgress + 0.018) % 1;
@@ -264,6 +285,11 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       newYorkPulseProgress = (newYorkPulseProgress + 0.018) % 1;
       (instance.getSource("new-york-water-pulse") as maplibregl.GeoJSONSource | undefined)?.setData(newYorkWaterLevelFeatures(newYorkPulseProgress));
     }, 80);
+    const currentParticleTimer = reducedMotion.current ? undefined : window.setInterval(() => {
+      if (!currentsModeRef.current) return;
+      currentParticleProgress = (currentParticleProgress + 0.016) % 1;
+      (instance.getSource("southern-ocean-current-particles") as maplibregl.GeoJSONSource | undefined)?.setData(currentParticleFeatures(currentParticleProgress));
+    }, 80);
     let lastScrollStep = 0;
     const handleStoryScroll = (event: WheelEvent) => {
       if (!storyModeRef.current || event.deltaY === 0 || Date.now() - lastScrollStep < 700) return;
@@ -272,7 +298,7 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       onStoryStepRef.current(event.deltaY > 0 ? 1 : -1);
     };
     instance.getCanvas().addEventListener("wheel", handleStoryScroll, { passive: false });
-    return () => { if (particleTimer) window.clearInterval(particleTimer); if (pulseTimer) window.clearInterval(pulseTimer); if (newYorkPulseTimer) window.clearInterval(newYorkPulseTimer); instance.getCanvas().removeEventListener("wheel", handleStoryScroll); instance.remove(); map.current = null; };
+    return () => { if (particleTimer) window.clearInterval(particleTimer); if (pulseTimer) window.clearInterval(pulseTimer); if (newYorkPulseTimer) window.clearInterval(newYorkPulseTimer); if (currentParticleTimer) window.clearInterval(currentParticleTimer); instance.getCanvas().removeEventListener("wheel", handleStoryScroll); instance.remove(); map.current = null; };
   }, []);
 
   useEffect(() => {
@@ -283,8 +309,8 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
     hotspotSource?.setData({ type: "FeatureCollection", features: hotspots.map((point) => ({ type: "Feature", properties: { id: point.id }, geometry: { type: "Point", coordinates: point.id === "water" ? regionalWaterPoints[region] : point.coordinates } })) });
     const heatSource = map.current.getSource("ice-shelf-heat") as maplibregl.GeoJSONSource | undefined;
     heatSource?.setData({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: regionalShelfPoints[region] } });
-    setStageVisuals(map.current, active, region, layers);
-  }, [active, region, layers]);
+    setStageVisuals(map.current, active, region, layers, currentsMode);
+  }, [active, region, layers, currentsMode]);
   useEffect(() => {
     if (!map.current?.isStyleLoaded()) return;
     if (storyMode) map.current.scrollZoom.disable();
