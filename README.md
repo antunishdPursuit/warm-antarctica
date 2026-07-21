@@ -61,12 +61,23 @@ implement the interactive map and its accessibility behavior, run lint and
 test checks, diagnose rendering and Story mode issues, and prepare project
 documentation.
 
-### GPT-5.6
+### GPT-5.6 Terra and Sol
 
-I used GPT-5.6 to research the scientific framing, compare technical options,
-help write and refine the explanatory content, and suggest implementation and
-test approaches. I reviewed the results and made the final product, science,
-and design decisions.
+I used GPT-5.6 Terra for most of the project's research, design, and
+implementation. Terra helped verify the scientific story, correct the early
+idea of a direct Antarctic-water route to New York, build the MapLibre globe
+and guided journey, add the Copernicus current visualization, diagnose
+interaction problems, write tests and documentation, and prepare the project
+for deployment.
+
+I used GPT-5.6 Sol during the final submission phase. Sol helped prepare the
+demo script and YouTube description, complete and review the Devpost
+materials, verify the public video, and perform the final release audit across
+the repository, deployed website, scientific sources, desktop experience,
+and phone layout.
+
+Both models were used through Codex. I reviewed their work and made the final
+science, product, and design decisions.
 
 ## Development notes
 
