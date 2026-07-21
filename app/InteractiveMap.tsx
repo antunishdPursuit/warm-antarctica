@@ -51,6 +51,12 @@ const globalOceanBands = [
   [[-170, -67], [-130, -65], [-90, -67], [-50, -64], [-10, -66], [30, -64], [70, -67], [110, -65], [150, -67]],
 ] as [number, number][][];
 
+const newYorkWaterLevels = [
+  { level: "low", coordinates: [[-73.15, 40.05], [-72.1, 40.1], [-71.05, 40.05]] },
+  { level: "middle", coordinates: [[-73.15, 40.5], [-72.1, 40.55], [-71.05, 40.5]] },
+  { level: "high", coordinates: [[-73.15, 40.95], [-72.1, 41], [-71.05, 40.95]] },
+] as { level: "low" | "middle" | "high"; coordinates: [number, number][] }[];
+
 const regionalWaterPoints: Record<ShelfRegion, [number, number]> = {
   amundsen: [-104, -72.5],
   bellingshausen: [-72, -72],
@@ -106,6 +112,17 @@ function ringPulseFeatures(paths: [number, number][][], progress: number) {
   };
 }
 
+function newYorkWaterLevelFeatures(progress: number) {
+  return {
+    type: "FeatureCollection" as const,
+    features: newYorkWaterLevels.map((waterLevel, index) => {
+      const phase = progress * newYorkWaterLevels.length - index;
+      const pulse = phase >= 0 && phase < 1 ? Math.sin(Math.PI * phase) : 0;
+      return { type: "Feature" as const, properties: { level: waterLevel.level, pulse }, geometry: { type: "LineString" as const, coordinates: waterLevel.coordinates } };
+    }),
+  };
+}
+
 function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, layers: StoryLayers) {
   const showLocalFlow = layers.warm && (active === "water" || active === "antarctica");
   const showAmundsen = showLocalFlow && region === "amundsen";
@@ -132,6 +149,8 @@ function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, lay
   instance.setLayoutProperty("global-ocean-band-pulse-core", "visibility", layers.global && active === "ocean" ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-glow", "visibility", layers.global && active === "newyork" ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-line", "visibility", layers.global && active === "newyork" ? "visible" : "none");
+  instance.setLayoutProperty("new-york-water-pulse-glow", "visibility", layers.global && active === "newyork" ? "visible" : "none");
+  instance.setLayoutProperty("new-york-water-pulse-core", "visibility", layers.global && active === "newyork" ? "visible" : "none");
   const visibleLabels = mapLabels.features.filter((label) => label.properties.stages.split(",").includes(active) && (label.properties.region === "all" || label.properties.region === region));
   instance.setFilter("map-labels", ["any", ...visibleLabels.map((label) => ["==", ["get", "name"], label.properties.name])] as maplibregl.FilterSpecification);
 }
@@ -212,14 +231,13 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       // This local glow marks below-shelf ocean heat. It does not mean the whole continent is warming in the same way.
       instance.addLayer({ id: "ice-shelf-warm-zone", type: "circle", source: "ice-shelf-heat", layout: { visibility: "none" }, paint: { "circle-radius": 38, "circle-color": "#ffb35e", "circle-opacity": 0.3, "circle-blur": 0.82 } });
       instance.addLayer({ id: "ice-shelf-heat-halo", type: "circle", source: "ice-shelf-heat", layout: { visibility: "none" }, paint: { "circle-radius": 13, "circle-color": "#ffb35e", "circle-opacity": 0.72, "circle-stroke-color": "#ffe0a8", "circle-stroke-width": 1 } });
-      // These lines are a visual cue for local sea-level exposure, not a flood boundary or forecast.
-      instance.addSource("new-york-water-cue", { type: "geojson", data: { type: "FeatureCollection", features: [
-        { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[-86, 29], [-82, 33], [-78, 37], [-74, 40.7], [-69, 44]] } },
-        { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[-84, 28], [-80, 32], [-76, 36], [-72.5, 39.7], [-67.5, 43]] } },
-        { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[-82, 27], [-78, 31], [-74.5, 35], [-71, 38.8], [-66, 42]] } },
-      ] } });
-      instance.addLayer({ id: "new-york-water-glow", type: "line", source: "new-york-water-cue", layout: { visibility: "none" }, paint: { "line-color": "#62ddec", "line-opacity": 0.28, "line-width": 11, "line-blur": 6 } });
-      instance.addLayer({ id: "new-york-water-line", type: "line", source: "new-york-water-cue", layout: { visibility: "none" }, paint: { "line-color": "#c4fbff", "line-opacity": 0.88, "line-width": 2.1 } });
+      // These fixed marks are a local water-level cue, not a flood boundary, forecast, or route from Antarctica.
+      instance.addSource("new-york-water-cue", { type: "geojson", data: { type: "FeatureCollection", features: newYorkWaterLevels.map((waterLevel) => ({ type: "Feature", properties: { level: waterLevel.level }, geometry: { type: "LineString", coordinates: waterLevel.coordinates } })) } });
+      instance.addLayer({ id: "new-york-water-glow", type: "line", source: "new-york-water-cue", layout: { visibility: "none" }, paint: { "line-color": "#62ddec", "line-opacity": 0.24, "line-width": 11, "line-blur": 5 } });
+      instance.addLayer({ id: "new-york-water-line", type: "line", source: "new-york-water-cue", layout: { visibility: "none" }, paint: { "line-color": "#c4fbff", "line-opacity": 0.62, "line-width": 2.7 } });
+      instance.addSource("new-york-water-pulse", { type: "geojson", data: newYorkWaterLevelFeatures(0) });
+      instance.addLayer({ id: "new-york-water-pulse-glow", type: "line", source: "new-york-water-pulse", layout: { visibility: "none" }, paint: { "line-color": "#65e3f3", "line-opacity": ["get", "pulse"], "line-width": 11, "line-blur": 6 } });
+      instance.addLayer({ id: "new-york-water-pulse-core", type: "line", source: "new-york-water-pulse", layout: { visibility: "none" }, paint: { "line-color": "#e2fdff", "line-opacity": ["get", "pulse"], "line-width": 3.5 } });
       instance.on("click", "hotspot-core", (event) => { const id = event.features?.[0]?.properties?.id as StopId | undefined; if (id) onSelectRef.current(id); });
       instance.on("mouseenter", "hotspot-core", () => { instance.getCanvas().style.cursor = "pointer"; });
       instance.on("mouseleave", "hotspot-core", () => { instance.getCanvas().style.cursor = ""; });
@@ -228,6 +246,7 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
     });
     let particleProgress = 0;
     let pulseProgress = 0;
+    let newYorkPulseProgress = 0;
     const particleTimer = reducedMotion.current ? undefined : window.setInterval(() => {
       if (activeRef.current !== "water" && activeRef.current !== "antarctica") return;
       particleProgress = (particleProgress + 0.018) % 1;
@@ -240,6 +259,11 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       pulseProgress = (pulseProgress + 0.018) % 1;
       (instance.getSource("global-ocean-band-pulses") as maplibregl.GeoJSONSource | undefined)?.setData(ringPulseFeatures(globalOceanBands, pulseProgress));
     }, 80);
+    const newYorkPulseTimer = reducedMotion.current ? undefined : window.setInterval(() => {
+      if (activeRef.current !== "newyork" || !layersRef.current.global) return;
+      newYorkPulseProgress = (newYorkPulseProgress + 0.018) % 1;
+      (instance.getSource("new-york-water-pulse") as maplibregl.GeoJSONSource | undefined)?.setData(newYorkWaterLevelFeatures(newYorkPulseProgress));
+    }, 80);
     let lastScrollStep = 0;
     const handleStoryScroll = (event: WheelEvent) => {
       if (!storyModeRef.current || event.deltaY === 0 || Date.now() - lastScrollStep < 700) return;
@@ -248,7 +272,7 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       onStoryStepRef.current(event.deltaY > 0 ? 1 : -1);
     };
     instance.getCanvas().addEventListener("wheel", handleStoryScroll, { passive: false });
-    return () => { if (particleTimer) window.clearInterval(particleTimer); if (pulseTimer) window.clearInterval(pulseTimer); instance.getCanvas().removeEventListener("wheel", handleStoryScroll); instance.remove(); map.current = null; };
+    return () => { if (particleTimer) window.clearInterval(particleTimer); if (pulseTimer) window.clearInterval(pulseTimer); if (newYorkPulseTimer) window.clearInterval(newYorkPulseTimer); instance.getCanvas().removeEventListener("wheel", handleStoryScroll); instance.remove(); map.current = null; };
   }, []);
 
   useEffect(() => {

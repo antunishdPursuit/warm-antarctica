@@ -37,6 +37,9 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /\}, \[\]\);/);
   assert.match(map, /prefers-reduced-motion: reduce/);
   assert.match(map, /new-york-water-cue/);
+  assert.match(map, /new-york-water-pulse/);
+  assert.match(map, /newYorkWaterLevelFeatures/);
+  assert.match(map, /local water-level cue, not a flood boundary, forecast, or route from Antarctica/);
   assert.match(map, /minZoom: 0\.85/);
   assert.match(map, /maxZoom: 4\.8/);
   assert.match(map, /ice-shelf-warm-zone/);
@@ -50,7 +53,7 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /map-labels/);
   assert.match(map, /Amundsen Sea/);
   assert.match(map, /New York City/);
-  assert.match(map, /not a flood boundary or forecast/);
+  assert.match(map, /not a flood boundary, forecast, or route from Antarctica/);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /journeyElapsed/);
   assert.match(page, /Resume journey/);
