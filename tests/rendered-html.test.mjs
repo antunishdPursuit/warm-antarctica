@@ -16,6 +16,9 @@ test("server-renders Warm Antarctica and its first journey step", async () => {
   assert.match(html, /<title>Warm Antarctica<\/title>/i);
   assert.match(html, /Warm water reaches the Amundsen Sea shelf/i);
   assert.match(html, /Play journey/i);
+  assert.match(html, /Interactive climate learning map/i);
+  assert.match(html, /Start journey/i);
+  assert.match(html, /Explore on my own/i);
   assert.match(html, /NASA: Pine Island Glacier/i);
   assert.doesNotMatch(html, /Your site is taking shape|SkeletonPreview/i);
 });
@@ -45,7 +48,7 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /new-york-water-pulse/);
   assert.match(map, /newYorkWaterLevelFeatures/);
   assert.match(map, /long illustrative lines pulse in sequence as a local water-level cue, not a flood boundary, forecast, or route from Antarctica/);
-  assert.match(map, /minZoom: 0\.85/);
+  assert.match(map, /minZoom: 1/);
   assert.match(map, /maxZoom: 4\.8/);
   assert.match(map, /ice-shelf-warm-zone/);
   assert.match(map, /not mean the whole continent is warming in the same way/);
@@ -54,6 +57,9 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /pulse from inner to outer/);
   assert.match(map, /const pulseIndex = paths\.length - 1 - index/);
   assert.match(map, /not measured currents or a route to New York/);
+  assert.match(map, /southern-ocean-current-particles/);
+  assert.match(map, /currentParticleFeatures/);
+  assert.match(map, /They do not show flow below ice shelves/);
   assert.match(map, /handleStoryScroll/);
   assert.match(map, /map-labels/);
   assert.match(map, /Amundsen Sea/);
@@ -61,6 +67,8 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /not a flood boundary, forecast, or route from Antarctica/);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /journeyElapsed/);
+  assert.match(page, /storyStageIndex/);
+  assert.match(page, /guidedJourneyStages\.length - 1/);
   assert.match(page, /GUIDED_JOURNEY_DURATION/);
   assert.match(page, /journeyStageIndex/);
   assert.match(page, /Resume journey/);
@@ -68,12 +76,18 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /window\.setInterval/);
   assert.match(page, /aria-current=\{active === stop\.id \? "step" : undefined\}/);
   assert.match(page, /Map display note/);
+  assert.match(page, /intro-modal/);
+  assert.match(page, /role="dialog"/);
   assert.match(page, /globe-map rendering limit/);
   assert.doesNotMatch(page, /render-note/);
   assert.match(page, /What directly adds water to the global ocean/);
   assert.match(page, /Grounded ice moving into the sea/);
   assert.match(page, /Quick check/);
   assert.match(page, /Story mode/);
+  assert.match(page, /Southern Ocean currents/);
+  assert.match(page, /July 20, 2026/);
+  assert.match(page, /Hide currents/);
+  assert.match(page, /active === "ocean" && <button className="currents-toggle"/);
   assert.match(page, /setCheckOpen\(true\)/);
   assert.match(page, /active === "water" && <section className="shelf-compare"/);
 });
