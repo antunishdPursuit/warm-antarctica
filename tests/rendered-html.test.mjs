@@ -74,6 +74,10 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /Grounded ice moving into the sea/);
   assert.match(page, /Quick check/);
   assert.match(page, /Story mode/);
+  assert.match(page, /How this map works/);
+  assert.match(page, /Start journey/);
+  assert.match(page, /warm-antarctica-first-visit/);
+  assert.match(page, /aria-modal="true"/);
   assert.match(page, /setCheckOpen\(true\)/);
   assert.match(page, /active === "water" && <section className="shelf-compare"/);
 });

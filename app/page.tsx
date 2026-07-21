@@ -15,7 +15,9 @@ export default function Home() {
   const [checkAnswer, setCheckAnswer] = useState<"grounded" | "floating" | "route" | null>(null);
   const [checkOpen, setCheckOpen] = useState(false);
   const [storyMode, setStoryMode] = useState(false);
+  const [firstVisitOpen, setFirstVisitOpen] = useState(false);
   const journeyElapsedRef = useRef(0);
+  const startJourneyRef = useRef<HTMLButtonElement>(null);
   const stops = useMemo(() => getJourneyStops(region), [region]);
   const item = stops.find((stop) => stop.id === active) ?? stops[0];
   const journeyStageIndex = getGuidedJourneyStageIndex(journeyElapsed);
@@ -43,6 +45,22 @@ export default function Home() {
     }, countdown > 0 ? 700 : 500);
     return () => window.clearTimeout(timer);
   }, [countdown]);
+
+  useEffect(() => {
+    if (window.localStorage.getItem("warm-antarctica-first-visit") === "seen") return;
+    const timer = window.setTimeout(() => setFirstVisitOpen(true), 0);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!firstVisitOpen) return;
+    startJourneyRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeFirstVisit();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [firstVisitOpen]);
 
   useEffect(() => {
     if (!playing) return;
@@ -74,6 +92,16 @@ export default function Home() {
     setCheckAnswer(null);
     setCheckOpen(false);
     setCountdown(3);
+  }
+
+  function closeFirstVisit() {
+    window.localStorage.setItem("warm-antarctica-first-visit", "seen");
+    setFirstVisitOpen(false);
+  }
+
+  function startFirstVisitJourney() {
+    closeFirstVisit();
+    startJourney();
   }
 
   function toggleJourney() {
@@ -124,6 +152,7 @@ export default function Home() {
     <header className="map-header"><div className="header-links"><a href="#top">Warm Antarctica</a><span className="project-kicker">Interactive climate learning map</span><button className="sources-trigger" onClick={() => setSourcesOpen((open) => !open)} aria-expanded={sourcesOpen} aria-controls="sources-drawer">Sources</button></div></header>
     <div className="map-intro" id="top"><h1>Explore the system.</h1><p>Rotate the globe or use the four stops to trace Antarctica&apos;s connection to East Coast sea level.</p></div>
     <div className="map-help">Drag to rotate &middot; Scroll to zoom &middot; Select a glowing point</div>
+    {firstVisitOpen && <section className="first-visit-modal" role="dialog" aria-modal="true" aria-labelledby="first-visit-title"><div className="first-visit-content"><p className="eyebrow">Welcome</p><h2 id="first-visit-title">How this map works</h2><p>Follow three Antarctic shelf examples, then see how grounded ice adds water to the global ocean. New York&apos;s sea level also has local causes.</p><div><button ref={startJourneyRef} onClick={startFirstVisitJourney}>Start journey</button><button onClick={closeFirstVisit}>Explore map</button></div></div></section>}
     {storyMode && <p className="story-mode-status" role="status">Story mode is on. Scroll over the globe to change stops.</p>}
     <details className="map-legend" open><summary>Map key</summary><ul><li><i className="legend-warm" />Warm water near the selected ice shelf</li><li><i className="legend-global" />Global ocean connection</li><li><i className="legend-local" />Symbolic New York water-level cue</li></ul></details>
     <aside className="story-card" aria-live="polite"><p className="eyebrow">{item.step} &middot; {item.label}</p><h2>{item.title}</h2><p>{item.text}</p>{active === "antarctica" && <section className="ice-cutaway" aria-label="Simplified ice-shelf cutaway"><p className="eyebrow">What happens beneath the shelf</p><div className="cutaway-ice">Floating ice shelf</div><div className="cutaway-water"><span>Warm water</span><b>&rarr; &rarr; &rarr;</b></div><div className="cutaway-grounded">Grounded ice behind the shelf</div><p>Warm water moves below the floating shelf, where it can add heat from underneath.</p></section>}{active === "water" && <section className="shelf-compare" aria-label="Compare Antarctic ice shelves"><p className="eyebrow">Compare a shelf</p><div><button className={region === "amundsen" ? "active" : ""} onClick={() => selectRegion("amundsen")} aria-pressed={region === "amundsen"}>Amundsen</button><button className={region === "bellingshausen" ? "active" : ""} onClick={() => selectRegion("bellingshausen")} aria-pressed={region === "bellingshausen"}>George VI</button><button className={region === "totten" ? "active" : ""} onClick={() => selectRegion("totten")} aria-pressed={region === "totten"}>Totten</button></div><p>{region === "amundsen" ? "Pine Island and Thwaites" : region === "bellingshausen" ? "Eastern Bellingshausen Sea" : "Sabrina Coast, East Antarctica"}</p></section>}<a className="card-source" href={item.sourceUrl} target="_blank" rel="noreferrer">Source: {item.sourceName} &#8599;</a>{active === "newyork" && <><button className="quick-check-trigger" onClick={() => setCheckOpen((open) => !open)} aria-expanded={checkOpen} aria-controls="journey-check">Quick check</button>{checkOpen && <section className="journey-check" id="journey-check" aria-label="End-of-journey check"><p className="eyebrow">Quick check</p><h3>What directly adds water to the global ocean?</h3><div><button className={checkAnswer === "grounded" ? "correct" : ""} onClick={() => setCheckAnswer("grounded")}>Grounded ice moving into the sea</button><button className={checkAnswer === "floating" ? "incorrect" : ""} onClick={() => setCheckAnswer("floating")}>A floating ice shelf thinning</button><button className={checkAnswer === "route" ? "incorrect" : ""} onClick={() => setCheckAnswer("route")}>Warm water traveling to New York</button></div>{checkAnswer && <p className={checkAnswer === "grounded" ? "answer-feedback correct" : "answer-feedback incorrect"}>{checkAnswer === "grounded" ? "Correct. Grounded ice adds water when it moves into the sea." : "Not quite. Floating ice shelves already displace water, and this map does not show a direct water route to New York."}</p>}</section>}</>}{playing && <strong className="journey-progress">Journey in progress &middot; {journeyStageIndex + 1} of {guidedJourneyStages.length} &middot; {guidedJourneyStages[journeyStageIndex].label}</strong>}</aside>
