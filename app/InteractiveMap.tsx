@@ -123,7 +123,9 @@ function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, lay
   instance.setLayoutProperty("totten-flow-glow", "visibility", showTotten ? "visible" : "none");
   instance.setLayoutProperty("totten-particle-glow", "visibility", showTotten ? "visible" : "none");
   instance.setLayoutProperty("totten-particle-core", "visibility", showTotten ? "visible" : "none");
-  instance.setLayoutProperty("ice-shelf-heat-halo", "visibility", layers.ice && active === "antarctica" ? "visible" : "none");
+  const showShelfWarmth = layers.ice && active === "antarctica";
+  instance.setLayoutProperty("ice-shelf-warm-zone", "visibility", showShelfWarmth ? "visible" : "none");
+  instance.setLayoutProperty("ice-shelf-heat-halo", "visibility", showShelfWarmth ? "visible" : "none");
   instance.setLayoutProperty("global-ocean-band-glow", "visibility", layers.global && active === "ocean" ? "visible" : "none");
   instance.setLayoutProperty("global-ocean-band-core", "visibility", layers.global && active === "ocean" ? "visible" : "none");
   instance.setLayoutProperty("global-ocean-band-pulse-glow", "visibility", layers.global && active === "ocean" ? "visible" : "none");
@@ -160,6 +162,8 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf", sources: {}, layers: [{ id: "ocean", type: "background", paint: { "background-color": "#061b2b" } }] },
       center: [0, -55],
       zoom: 1.2,
+      minZoom: 0.85,
+      maxZoom: 4.8,
       pitch: 16,
       attributionControl: false,
     });
@@ -205,7 +209,9 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
       instance.addLayer({ id: "totten-particle-glow", type: "circle", source: "totten-particles", layout: { visibility: "none" }, paint: { "circle-radius": 10, "circle-color": "#e0a56d", "circle-opacity": 0.38, "circle-blur": 0.7 } });
       instance.addLayer({ id: "totten-particle-core", type: "circle", source: "totten-particles", layout: { visibility: "none" }, paint: { "circle-radius": 2.8, "circle-color": "#fff0d5", "circle-stroke-color": "#eab477", "circle-stroke-width": 1, "circle-opacity": 1 } });
       instance.addSource("ice-shelf-heat", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: regionalShelfPoints[regionRef.current] } } });
-      instance.addLayer({ id: "ice-shelf-heat-halo", type: "circle", source: "ice-shelf-heat", layout: { visibility: "none" }, paint: { "circle-radius": 20, "circle-color": "#ffb35e", "circle-opacity": 0.72, "circle-stroke-color": "#ffe0a8", "circle-stroke-width": 1 } });
+      // This local glow marks below-shelf ocean heat. It does not mean the whole continent is warming in the same way.
+      instance.addLayer({ id: "ice-shelf-warm-zone", type: "circle", source: "ice-shelf-heat", layout: { visibility: "none" }, paint: { "circle-radius": 38, "circle-color": "#ffb35e", "circle-opacity": 0.3, "circle-blur": 0.82 } });
+      instance.addLayer({ id: "ice-shelf-heat-halo", type: "circle", source: "ice-shelf-heat", layout: { visibility: "none" }, paint: { "circle-radius": 13, "circle-color": "#ffb35e", "circle-opacity": 0.72, "circle-stroke-color": "#ffe0a8", "circle-stroke-width": 1 } });
       // These lines are a visual cue for local sea-level exposure, not a flood boundary or forecast.
       instance.addSource("new-york-water-cue", { type: "geojson", data: { type: "FeatureCollection", features: [
         { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[-86, 29], [-82, 33], [-78, 37], [-74, 40.7], [-69, 44]] } },

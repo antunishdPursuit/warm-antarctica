@@ -37,6 +37,10 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /\}, \[\]\);/);
   assert.match(map, /prefers-reduced-motion: reduce/);
   assert.match(map, /new-york-water-cue/);
+  assert.match(map, /minZoom: 0\.85/);
+  assert.match(map, /maxZoom: 4\.8/);
+  assert.match(map, /ice-shelf-warm-zone/);
+  assert.match(map, /not mean the whole continent is warming in the same way/);
   assert.match(map, /global-ocean-band-pulses/);
   assert.match(map, /ringPulseFeatures/);
   assert.match(map, /pulse from inner to outer/);
