@@ -12,7 +12,7 @@ export type JourneyStop = {
   sourceUrl: string;
 };
 
-export type ShelfRegion = "amundsen" | "bellingshausen";
+export type ShelfRegion = "amundsen" | "bellingshausen" | "totten";
 
 export const journeyStops: JourneyStop[] = [
   {
@@ -57,9 +57,16 @@ export function getJourneyStops(region: ShelfRegion): JourneyStop[] {
   if (region === "amundsen") return journeyStops;
   return journeyStops.map((stop) => stop.id === "water" ? {
     ...stop,
-    title: "Warm deep water reaches George VI Ice Shelf.",
-    text: "In the eastern Bellingshausen Sea, Circumpolar Deep Water can flood the continental shelf and form the main inflow beneath George VI Ice Shelf.",
-    sourceName: "BAS: George VI Ice Shelf",
-    sourceUrl: "https://www.bas.ac.uk/data/our-data/publication/circulation-and-melting-beneath-george-vi-ice-shelf-antarctica-2/",
+    ...(region === "bellingshausen" ? {
+      title: "Warm deep water reaches George VI Ice Shelf.",
+      text: "In the eastern Bellingshausen Sea, Circumpolar Deep Water can flood the continental shelf and form the main inflow beneath George VI Ice Shelf.",
+      sourceName: "BAS: George VI Ice Shelf",
+      sourceUrl: "https://www.bas.ac.uk/data/our-data/publication/circulation-and-melting-beneath-george-vi-ice-shelf-antarctica-2/",
+    } : {
+      title: "Deep channels can reach Totten Glacier.",
+      text: "NASA researchers found seafloor troughs deep enough to give warm ocean water access to the base of Totten Glacier in East Antarctica.",
+      sourceName: "NASA: Totten Glacier troughs",
+      sourceUrl: "https://www.jpl.nasa.gov/news/utexas-nasa-study-sees-new-threat-to-east-antarctic-ice/",
+    }),
   } : stop);
 }

@@ -8,6 +8,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import type { ShelfRegion } from "./journey";
 
 export type StopId = "antarctica" | "water" | "ocean" | "newyork";
+export type StoryLayers = { warm: boolean; ice: boolean; global: boolean };
 
 const views: Record<StopId, maplibregl.FlyToOptions> = {
   antarctica: { center: [0, -63], zoom: 0.85, pitch: 18, bearing: 0, duration: 1800 },
@@ -17,6 +18,7 @@ const views: Record<StopId, maplibregl.FlyToOptions> = {
 };
 
 const bellingshausenWaterView: maplibregl.FlyToOptions = { center: [-72, -72], zoom: 3.15, pitch: 46, bearing: 18, duration: 1800 };
+const tottenWaterView: maplibregl.FlyToOptions = { center: [120, -66], zoom: 3.15, pitch: 46, bearing: 18, duration: 1800 };
 
 const hotspots = [
   { id: "antarctica", coordinates: [0, -78] },
@@ -37,14 +39,22 @@ const bellingshausenPaths = [
   [[-87, -67], [-82, -69], [-76, -71], [-72, -72.5], [-70, -73]],
 ] as [number, number][][];
 
+const tottenPaths = [
+  [[135, -61], [129, -63], [124, -65], [120, -67], [117, -68]],
+  [[132, -62], [127, -64], [122, -66], [119, -67.5], [117, -68]],
+  [[129, -63], [125, -65], [121, -66.5], [118, -67.7], [117, -68]],
+] as [number, number][][];
+
 const regionalWaterPoints: Record<ShelfRegion, [number, number]> = {
   amundsen: [-104, -72.5],
   bellingshausen: [-72, -72],
+  totten: [116, -67],
 };
 
 const regionalShelfPoints: Record<ShelfRegion, [number, number]> = {
   amundsen: [-101, -75],
   bellingshausen: [-70, -73],
+  totten: [117, -68],
 };
 
 function pointAlongPath(path: [number, number][], progress: number): [number, number] {
@@ -66,10 +76,11 @@ function particleFeatures(paths: [number, number][][], progress: number) {
   };
 }
 
-function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion) {
-  const showLocalFlow = active === "water" || active === "antarctica";
+function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, layers: StoryLayers) {
+  const showLocalFlow = layers.warm && (active === "water" || active === "antarctica");
   const showAmundsen = showLocalFlow && region === "amundsen";
   const showBellingshausen = showLocalFlow && region === "bellingshausen";
+  const showTotten = showLocalFlow && region === "totten";
   instance.setLayoutProperty("amundsen-flow-line", "visibility", showAmundsen ? "visible" : "none");
   instance.setLayoutProperty("amundsen-flow-glow", "visibility", showAmundsen ? "visible" : "none");
   instance.setLayoutProperty("amundsen-particle-glow", "visibility", showAmundsen ? "visible" : "none");
@@ -78,24 +89,30 @@ function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion) {
   instance.setLayoutProperty("bellingshausen-flow-glow", "visibility", showBellingshausen ? "visible" : "none");
   instance.setLayoutProperty("bellingshausen-particle-glow", "visibility", showBellingshausen ? "visible" : "none");
   instance.setLayoutProperty("bellingshausen-particle-core", "visibility", showBellingshausen ? "visible" : "none");
-  instance.setLayoutProperty("ice-shelf-heat-halo", "visibility", active === "antarctica" ? "visible" : "none");
-  instance.setLayoutProperty("global-ocean-band-glow", "visibility", active === "ocean" ? "visible" : "none");
-  instance.setLayoutProperty("global-ocean-band-core", "visibility", active === "ocean" ? "visible" : "none");
-  instance.setLayoutProperty("new-york-water-glow", "visibility", active === "newyork" ? "visible" : "none");
-  instance.setLayoutProperty("new-york-water-line", "visibility", active === "newyork" ? "visible" : "none");
+  instance.setLayoutProperty("totten-flow-line", "visibility", showTotten ? "visible" : "none");
+  instance.setLayoutProperty("totten-flow-glow", "visibility", showTotten ? "visible" : "none");
+  instance.setLayoutProperty("totten-particle-glow", "visibility", showTotten ? "visible" : "none");
+  instance.setLayoutProperty("totten-particle-core", "visibility", showTotten ? "visible" : "none");
+  instance.setLayoutProperty("ice-shelf-heat-halo", "visibility", layers.ice && active === "antarctica" ? "visible" : "none");
+  instance.setLayoutProperty("global-ocean-band-glow", "visibility", layers.global && active === "ocean" ? "visible" : "none");
+  instance.setLayoutProperty("global-ocean-band-core", "visibility", layers.global && active === "ocean" ? "visible" : "none");
+  instance.setLayoutProperty("new-york-water-glow", "visibility", layers.global && active === "newyork" ? "visible" : "none");
+  instance.setLayoutProperty("new-york-water-line", "visibility", layers.global && active === "newyork" ? "visible" : "none");
 }
 
-export function InteractiveMap({ active, region, onSelect }: { active: StopId; region: ShelfRegion; onSelect: (id: StopId) => void }) {
+export function InteractiveMap({ active, region, layers, onSelect }: { active: StopId; region: ShelfRegion; layers: StoryLayers; onSelect: (id: StopId) => void }) {
   const node = useRef<HTMLDivElement>(null);
   const map = useRef<Map | null>(null);
   const onSelectRef = useRef(onSelect);
   const activeRef = useRef(active);
   const regionRef = useRef(region);
+  const layersRef = useRef(layers);
   const reducedMotion = useRef(false);
 
   useEffect(() => { onSelectRef.current = onSelect; }, [onSelect]);
   useEffect(() => { activeRef.current = active; }, [active]);
   useEffect(() => { regionRef.current = region; }, [region]);
+  useEffect(() => { layersRef.current = layers; }, [layers]);
 
   useEffect(() => {
     if (!node.current || map.current) return;
@@ -140,6 +157,13 @@ export function InteractiveMap({ active, region, onSelect }: { active: StopId; r
       instance.addSource("bellingshausen-particles", { type: "geojson", data: particleFeatures(bellingshausenPaths, 0) });
       instance.addLayer({ id: "bellingshausen-particle-glow", type: "circle", source: "bellingshausen-particles", layout: { visibility: "none" }, paint: { "circle-radius": 10, "circle-color": "#d9935a", "circle-opacity": 0.38, "circle-blur": 0.7 } });
       instance.addLayer({ id: "bellingshausen-particle-core", type: "circle", source: "bellingshausen-particles", layout: { visibility: "none" }, paint: { "circle-radius": 2.8, "circle-color": "#fff0d5", "circle-stroke-color": "#eab477", "circle-stroke-width": 1, "circle-opacity": 1 } });
+      instance.addSource("totten-flow", { type: "geojson", data: { type: "FeatureCollection", features: tottenPaths.map((coordinates) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } })) } });
+      instance.addLayer({ id: "totten-flow-glow", type: "line", source: "totten-flow", layout: { visibility: "none" }, paint: { "line-color": "#e0a56d", "line-opacity": 0.34, "line-width": 7, "line-blur": 3 } });
+      instance.addLayer({ id: "totten-flow-line", type: "line", source: "totten-flow", layout: { visibility: "none" }, paint: { "line-color": "#ffe0ad", "line-opacity": 0.9, "line-width": 2.5, "line-dasharray": [1, 1.4] } });
+      // This is a local explanatory path for Totten Glacier, not a measured parcel track.
+      instance.addSource("totten-particles", { type: "geojson", data: particleFeatures(tottenPaths, 0) });
+      instance.addLayer({ id: "totten-particle-glow", type: "circle", source: "totten-particles", layout: { visibility: "none" }, paint: { "circle-radius": 10, "circle-color": "#e0a56d", "circle-opacity": 0.38, "circle-blur": 0.7 } });
+      instance.addLayer({ id: "totten-particle-core", type: "circle", source: "totten-particles", layout: { visibility: "none" }, paint: { "circle-radius": 2.8, "circle-color": "#fff0d5", "circle-stroke-color": "#eab477", "circle-stroke-width": 1, "circle-opacity": 1 } });
       instance.addSource("ice-shelf-heat", { type: "geojson", data: { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: regionalShelfPoints[regionRef.current] } } });
       instance.addLayer({ id: "ice-shelf-heat-halo", type: "circle", source: "ice-shelf-heat", layout: { visibility: "none" }, paint: { "circle-radius": 20, "circle-color": "#ffb35e", "circle-opacity": 0.72, "circle-stroke-color": "#ffe0a8", "circle-stroke-width": 1 } });
       // These lines are a visual cue for local sea-level exposure, not a flood boundary or forecast.
@@ -153,7 +177,7 @@ export function InteractiveMap({ active, region, onSelect }: { active: StopId; r
       instance.on("click", "hotspot-core", (event) => { const id = event.features?.[0]?.properties?.id as StopId | undefined; if (id) onSelectRef.current(id); });
       instance.on("mouseenter", "hotspot-core", () => { instance.getCanvas().style.cursor = "pointer"; });
       instance.on("mouseleave", "hotspot-core", () => { instance.getCanvas().style.cursor = ""; });
-      setStageVisuals(instance, activeRef.current, regionRef.current);
+      setStageVisuals(instance, activeRef.current, regionRef.current, layersRef.current);
       instance.flyTo({ ...views.water, duration: reducedMotion.current ? 0 : views.water.duration });
     });
     let particleProgress = 0;
@@ -162,20 +186,20 @@ export function InteractiveMap({ active, region, onSelect }: { active: StopId; r
       particleProgress = (particleProgress + 0.018) % 1;
       const currentRegion = regionRef.current;
       const source = instance.getSource(`${currentRegion}-particles`) as maplibregl.GeoJSONSource | undefined;
-      source?.setData(particleFeatures(currentRegion === "amundsen" ? amundsenPaths : bellingshausenPaths, particleProgress));
+      source?.setData(particleFeatures(currentRegion === "amundsen" ? amundsenPaths : currentRegion === "bellingshausen" ? bellingshausenPaths : tottenPaths, particleProgress));
     }, 80);
     return () => { if (particleTimer) window.clearInterval(particleTimer); instance.remove(); map.current = null; };
   }, []);
 
   useEffect(() => {
     if (!map.current?.isStyleLoaded()) return;
-    const view = active === "water" && region === "bellingshausen" ? bellingshausenWaterView : views[active];
+    const view = active === "water" ? region === "bellingshausen" ? bellingshausenWaterView : region === "totten" ? tottenWaterView : views.water : views[active];
     map.current.flyTo({ ...view, duration: reducedMotion.current ? 0 : view.duration });
     const hotspotSource = map.current.getSource("hotspots") as maplibregl.GeoJSONSource | undefined;
     hotspotSource?.setData({ type: "FeatureCollection", features: hotspots.map((point) => ({ type: "Feature", properties: { id: point.id }, geometry: { type: "Point", coordinates: point.id === "water" ? regionalWaterPoints[region] : point.coordinates } })) });
     const heatSource = map.current.getSource("ice-shelf-heat") as maplibregl.GeoJSONSource | undefined;
     heatSource?.setData({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: regionalShelfPoints[region] } });
-    setStageVisuals(map.current, active, region);
-  }, [active, region]);
+    setStageVisuals(map.current, active, region, layers);
+  }, [active, region, layers]);
   return <div className="map-canvas" ref={node} aria-label="Interactive globe map with Antarctica, Southern Ocean, Atlantic, and New York hotspots" />;
 }

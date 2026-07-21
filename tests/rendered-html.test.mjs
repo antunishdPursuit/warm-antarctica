@@ -30,6 +30,8 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(journey, /id: "water"[\s\S]*id: "antarctica"[\s\S]*id: "ocean"[\s\S]*id: "newyork"/);
   assert.match(journey, /Warm deep water reaches George VI Ice Shelf/);
   assert.match(journey, /BAS: George VI Ice Shelf/);
+  assert.match(journey, /Deep channels can reach Totten Glacier/);
+  assert.match(journey, /NASA: Totten Glacier troughs/);
   assert.match(map, /const onSelectRef = useRef\(onSelect\)/);
   assert.match(map, /onSelectRef\.current\(id\)/);
   assert.match(map, /\}, \[\]\);/);
@@ -50,4 +52,8 @@ test("guided Amundsen particles stay local and respect reduced motion", async ()
   assert.match(map, /activeRef\.current !== "water" && activeRef\.current !== "antarctica"/);
   assert.match(map, /reducedMotion\.current \? undefined : window\.setInterval/);
   assert.match(map, /These particles explain the sourced local path; they are not live current measurements/);
+  assert.match(map, /totten-particles/);
+  assert.match(map, /layers\.warm/);
+  assert.match(map, /layers\.ice/);
+  assert.match(map, /layers\.global/);
 });
