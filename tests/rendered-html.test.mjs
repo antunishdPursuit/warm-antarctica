@@ -37,6 +37,7 @@ test("journey data keeps one source per stage and a shared duration", async () =
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /journeyElapsed/);
   assert.match(page, /Resume journey/);
+  assert.match(page, /Restart journey/);
   assert.match(page, /window\.setInterval/);
   assert.match(page, /aria-current=\{active === stop\.id \? "step" : undefined\}/);
 });
