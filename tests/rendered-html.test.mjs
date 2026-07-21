@@ -107,3 +107,13 @@ test("guided Amundsen particles stay local and respect reduced motion", async ()
   assert.match(map, /layers\.global/);
   assert.match(map, /pulseProgress = \(pulseProgress \+ 0\.018\) % 1/);
 });
+
+test("Story mode captures wheel input before MapLibre can zoom", async () => {
+  const map = await readFile(new URL("../app/InteractiveMap.tsx", import.meta.url), "utf8");
+  assert.match(map, /const storyWheelOptions = \{ passive: false, capture: true \}/);
+  assert.match(map, /event\.preventDefault\(\);\s*event\.stopPropagation\(\);/);
+  assert.match(map, /instance\.getContainer\(\)\.addEventListener\("wheel", handleStoryScroll, storyWheelOptions\)/);
+  assert.match(map, /instance\.getContainer\(\)\.removeEventListener\("wheel", handleStoryScroll, storyWheelOptions\)/);
+  assert.match(map, /onStoryStepRef\.current\(event\.deltaY > 0 \? 1 : -1\)/);
+  assert.match(map, /if \(storyMode\) map\.current\.scrollZoom\.disable\(\);\s*else map\.current\.scrollZoom\.enable\(\);/);
+});

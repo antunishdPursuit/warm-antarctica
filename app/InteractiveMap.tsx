@@ -309,14 +309,17 @@ export function InteractiveMap({ active, region, layers, storyMode, currentsMode
       (instance.getSource("southern-ocean-current-particles") as maplibregl.GeoJSONSource | undefined)?.setData(currentParticleFeatures(currentParticleProgress));
     }, 80);
     let lastScrollStep = 0;
+    const storyWheelOptions = { passive: false, capture: true };
     const handleStoryScroll = (event: WheelEvent) => {
       if (!storyModeRef.current || event.deltaY === 0 || Date.now() - lastScrollStep < 700) return;
       event.preventDefault();
+      event.stopPropagation();
       lastScrollStep = Date.now();
       onStoryStepRef.current(event.deltaY > 0 ? 1 : -1);
     };
-    instance.getCanvas().addEventListener("wheel", handleStoryScroll, { passive: false });
-    return () => { if (particleTimer) window.clearInterval(particleTimer); if (pulseTimer) window.clearInterval(pulseTimer); if (newYorkPulseTimer) window.clearInterval(newYorkPulseTimer); if (currentParticleTimer) window.clearInterval(currentParticleTimer); instance.getCanvas().removeEventListener("wheel", handleStoryScroll); instance.remove(); map.current = null; };
+    // Capture wheel input before MapLibre's canvas handler can zoom in Story mode.
+    instance.getContainer().addEventListener("wheel", handleStoryScroll, storyWheelOptions);
+    return () => { if (particleTimer) window.clearInterval(particleTimer); if (pulseTimer) window.clearInterval(pulseTimer); if (newYorkPulseTimer) window.clearInterval(newYorkPulseTimer); if (currentParticleTimer) window.clearInterval(currentParticleTimer); instance.getContainer().removeEventListener("wheel", handleStoryScroll, storyWheelOptions); instance.remove(); map.current = null; };
   }, []);
 
   useEffect(() => {
