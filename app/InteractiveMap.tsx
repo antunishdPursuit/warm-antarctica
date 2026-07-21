@@ -135,6 +135,20 @@ function currentParticleFeatures(progress: number) {
   };
 }
 
+function currentDirectionFeatures() {
+  return {
+    type: "FeatureCollection" as const,
+    features: currentField.vectors
+      .filter(([,, eastward, northward]) => Math.hypot(eastward, northward) > 0.015)
+      .filter((_, index) => index % 380 === 0)
+      .map(([longitude, latitude, eastward, northward]) => ({
+      type: "Feature" as const,
+      properties: { rotation: -Math.atan2(northward, eastward) * 180 / Math.PI },
+      geometry: { type: "Point" as const, coordinates: [longitude, latitude] },
+    })),
+  };
+}
+
 function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, layers: StoryLayers, currentsMode: boolean) {
   const showLocalFlow = layers.warm && (active === "water" || active === "antarctica");
   const showAmundsen = showLocalFlow && region === "amundsen";
@@ -161,6 +175,7 @@ function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, lay
   instance.setLayoutProperty("global-ocean-band-pulse-core", "visibility", !currentsMode && layers.global && active === "ocean" ? "visible" : "none");
   instance.setLayoutProperty("southern-ocean-current-particle-glow", "visibility", currentsMode ? "visible" : "none");
   instance.setLayoutProperty("southern-ocean-current-particle-core", "visibility", currentsMode ? "visible" : "none");
+  instance.setLayoutProperty("southern-ocean-current-arrows", "visibility", currentsMode ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-glow", "visibility", layers.global && active === "newyork" ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-line", "visibility", layers.global && active === "newyork" ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-pulse-glow", "visibility", layers.global && active === "newyork" ? "visible" : "none");
@@ -226,6 +241,9 @@ export function InteractiveMap({ active, region, layers, storyMode, currentsMode
       instance.addSource("southern-ocean-current-particles", { type: "geojson", data: currentParticleFeatures(0) });
       instance.addLayer({ id: "southern-ocean-current-particle-glow", type: "circle", source: "southern-ocean-current-particles", layout: { visibility: "none" }, paint: { "circle-radius": 7, "circle-color": "#5de0f4", "circle-opacity": 0.34, "circle-blur": 0.75 } });
       instance.addLayer({ id: "southern-ocean-current-particle-core", type: "circle", source: "southern-ocean-current-particles", layout: { visibility: "none" }, paint: { "circle-radius": 1.9, "circle-color": "#d9fcff", "circle-opacity": 0.9 } });
+      // Sparse arrowheads clarify the actual sampled direction; particles alone only show that the field is moving.
+      instance.addSource("southern-ocean-current-arrows", { type: "geojson", data: currentDirectionFeatures() });
+      instance.addLayer({ id: "southern-ocean-current-arrows", type: "symbol", source: "southern-ocean-current-arrows", layout: { visibility: "none", "text-field": ">", "text-font": ["Open Sans Bold"], "text-size": 24, "text-rotate": ["get", "rotation"], "text-keep-upright": false, "text-allow-overlap": true, "text-ignore-placement": true }, paint: { "text-color": "#d9fcff", "text-halo-color": "#0a5265", "text-halo-width": 1.2 } });
       instance.addSource("amundsen-flow", { type: "geojson", data: { type: "FeatureCollection", features: amundsenPaths.map((coordinates) => ({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates } })) } });
       instance.addLayer({ id: "amundsen-flow-glow", type: "line", source: "amundsen-flow", layout: { visibility: "none" }, paint: { "line-color": "#ffb85e", "line-opacity": 0.34, "line-width": 7, "line-blur": 3 } });
       instance.addLayer({ id: "amundsen-flow-line", type: "line", source: "amundsen-flow", layout: { visibility: "none" }, paint: { "line-color": "#ffd28c", "line-opacity": 0.9, "line-width": 2.5, "line-dasharray": [1, 1.4] } });

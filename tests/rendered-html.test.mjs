@@ -59,6 +59,8 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /not measured currents or a route to New York/);
   assert.match(map, /southern-ocean-current-particles/);
   assert.match(map, /currentParticleFeatures/);
+  assert.match(map, /southern-ocean-current-arrows/);
+  assert.match(map, /currentDirectionFeatures/);
   assert.match(map, /They do not show flow below ice shelves/);
   assert.match(map, /handleStoryScroll/);
   assert.match(map, /map-labels/);
@@ -85,6 +87,7 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /Quick check/);
   assert.match(page, /Story mode/);
   assert.match(page, /Southern Ocean currents/);
+  assert.match(page, /Arrows show modeled direction/);
   assert.match(page, /July 20, 2026/);
   assert.match(page, /Hide currents/);
   assert.match(page, /active === "ocean" && <button className="currents-toggle"/);
