@@ -37,6 +37,9 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(map, /\}, \[\]\);/);
   assert.match(map, /prefers-reduced-motion: reduce/);
   assert.match(map, /new-york-water-cue/);
+  assert.match(map, /map-labels/);
+  assert.match(map, /Amundsen Sea/);
+  assert.match(map, /New York City/);
   assert.match(map, /not a flood boundary or forecast/);
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /journeyElapsed/);
@@ -47,6 +50,8 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /Map display note/);
   assert.match(page, /globe-map rendering limit/);
   assert.doesNotMatch(page, /render-note/);
+  assert.match(page, /What directly adds water to the global ocean/);
+  assert.match(page, /Grounded ice moving into the sea/);
 });
 
 test("guided Amundsen particles stay local and respect reduced motion", async () => {

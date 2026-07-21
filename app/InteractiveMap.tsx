@@ -57,6 +57,17 @@ const regionalShelfPoints: Record<ShelfRegion, [number, number]> = {
   totten: [117, -68],
 };
 
+const mapLabels = {
+  type: "FeatureCollection" as const,
+  features: [
+    { type: "Feature" as const, properties: { name: "Amundsen Sea", stages: "water,antarctica", region: "amundsen" }, geometry: { type: "Point" as const, coordinates: [-112, -69] } },
+    { type: "Feature" as const, properties: { name: "Bellingshausen Sea", stages: "water,antarctica", region: "bellingshausen" }, geometry: { type: "Point" as const, coordinates: [-80, -68] } },
+    { type: "Feature" as const, properties: { name: "Totten Glacier", stages: "water,antarctica", region: "totten" }, geometry: { type: "Point" as const, coordinates: [119, -66] } },
+    { type: "Feature" as const, properties: { name: "Southern Ocean", stages: "ocean", region: "all" }, geometry: { type: "Point" as const, coordinates: [-28, -47] } },
+    { type: "Feature" as const, properties: { name: "New York City", stages: "newyork", region: "all" }, geometry: { type: "Point" as const, coordinates: [-73.7, 41.5] } },
+  ],
+};
+
 function pointAlongPath(path: [number, number][], progress: number): [number, number] {
   const scaled = progress * (path.length - 1);
   const start = path[Math.floor(scaled)] ?? path[0];
@@ -98,6 +109,8 @@ function setStageVisuals(instance: Map, active: StopId, region: ShelfRegion, lay
   instance.setLayoutProperty("global-ocean-band-core", "visibility", layers.global && active === "ocean" ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-glow", "visibility", layers.global && active === "newyork" ? "visible" : "none");
   instance.setLayoutProperty("new-york-water-line", "visibility", layers.global && active === "newyork" ? "visible" : "none");
+  const visibleLabels = mapLabels.features.filter((label) => label.properties.stages.split(",").includes(active) && (label.properties.region === "all" || label.properties.region === region));
+  instance.setFilter("map-labels", ["any", ...visibleLabels.map((label) => ["==", ["get", "name"], label.properties.name])] as maplibregl.FilterSpecification);
 }
 
 export function InteractiveMap({ active, region, layers, onSelect }: { active: StopId; region: ShelfRegion; layers: StoryLayers; onSelect: (id: StopId) => void }) {
@@ -119,7 +132,7 @@ export function InteractiveMap({ active, region, layers, onSelect }: { active: S
     reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const instance = new maplibregl.Map({
       container: node.current,
-      style: { version: 8, sources: {}, layers: [{ id: "ocean", type: "background", paint: { "background-color": "#061b2b" } }] },
+      style: { version: 8, glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf", sources: {}, layers: [{ id: "ocean", type: "background", paint: { "background-color": "#061b2b" } }] },
       center: [0, -55],
       zoom: 1.2,
       pitch: 16,
@@ -136,6 +149,8 @@ export function InteractiveMap({ active, region, layers, onSelect }: { active: S
       instance.addSource("hotspots", { type: "geojson", data: { type: "FeatureCollection", features: hotspots.map((point) => ({ type: "Feature", properties: { id: point.id }, geometry: { type: "Point", coordinates: point.id === "water" ? regionalWaterPoints[regionRef.current] : point.coordinates } })) } });
       instance.addLayer({ id: "hotspot-halo", type: "circle", source: "hotspots", paint: { "circle-radius": 15, "circle-color": "#7de6f4", "circle-opacity": 0.12, "circle-stroke-color": "#baf9ff", "circle-stroke-width": 1 } });
       instance.addLayer({ id: "hotspot-core", type: "circle", source: "hotspots", paint: { "circle-radius": 4.5, "circle-color": "#efffff", "circle-stroke-color": "#42c6df", "circle-stroke-width": 2 } });
+      instance.addSource("map-labels", { type: "geojson", data: mapLabels });
+      instance.addLayer({ id: "map-labels", type: "symbol", source: "map-labels", layout: { "text-field": ["get", "name"], "text-font": ["Open Sans Semibold"], "text-size": 13, "text-letter-spacing": 0.04, "text-offset": [0, 1.15], "text-anchor": "top" }, paint: { "text-color": "#e4fbff", "text-halo-color": "#031720", "text-halo-width": 1.5 } });
       instance.addSource("global-ocean-bands", { type: "geojson", data: { type: "FeatureCollection", features: [
         { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[-170,-55],[-130,-53],[-90,-55],[-50,-52],[-10,-54],[30,-52],[70,-55],[110,-53],[150,-55]] } },
         { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [[-170,-61],[-130,-59],[-90,-61],[-50,-58],[-10,-60],[30,-58],[70,-61],[110,-59],[150,-61]] } },
