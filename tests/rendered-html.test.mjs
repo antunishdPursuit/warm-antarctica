@@ -9,11 +9,11 @@ async function render() {
   return worker.fetch(new Request("http://localhost/", { headers: { accept: "text/html" } }), { ASSETS: { fetch: async () => new Response("Not found", { status: 404 }) } }, { waitUntil() {}, passThroughOnException() {} });
 }
 
-test("server-renders Antarctica Connected and its first journey step", async () => {
+test("server-renders Warm Antarctica and its first journey step", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /<title>Antarctica: Connected<\/title>/i);
+  assert.match(html, /<title>Warm Antarctica<\/title>/i);
   assert.match(html, /Warm water reaches the Amundsen Sea shelf/i);
   assert.match(html, /Play journey/i);
   assert.match(html, /NASA: Pine Island Glacier/i);
@@ -26,8 +26,12 @@ test("journey data keeps one source per stage and a shared duration", async () =
     readFile(new URL("../app/InteractiveMap.tsx", import.meta.url), "utf8"),
   ]);
   assert.match(journey, /export const STAGE_DURATION = 5000/);
-  assert.equal((journey.match(/sourceUrl: "https/g) ?? []).length, 4);
+  assert.ok((journey.match(/sourceUrl: "https/g) ?? []).length >= 5);
   assert.match(journey, /id: "water"[\s\S]*id: "antarctica"[\s\S]*id: "ocean"[\s\S]*id: "newyork"/);
+  assert.match(journey, /Warm deep water reaches George VI Ice Shelf/);
+  assert.match(journey, /BAS: George VI Ice Shelf/);
+  assert.match(journey, /Deep channels can reach Totten Glacier/);
+  assert.match(journey, /NASA: Totten Glacier troughs/);
   assert.match(map, /const onSelectRef = useRef\(onSelect\)/);
   assert.match(map, /onSelectRef\.current\(id\)/);
   assert.match(map, /\}, \[\]\);/);
@@ -40,4 +44,19 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /Restart journey/);
   assert.match(page, /window\.setInterval/);
   assert.match(page, /aria-current=\{active === stop\.id \? "step" : undefined\}/);
+  assert.match(page, /Map display note/);
+  assert.match(page, /globe-map rendering limit/);
+  assert.doesNotMatch(page, /render-note/);
+});
+
+test("guided Amundsen particles stay local and respect reduced motion", async () => {
+  const map = await readFile(new URL("../app/InteractiveMap.tsx", import.meta.url), "utf8");
+  assert.match(map, /amundsen-particles/);
+  assert.match(map, /activeRef\.current !== "water" && activeRef\.current !== "antarctica"/);
+  assert.match(map, /reducedMotion\.current \? undefined : window\.setInterval/);
+  assert.match(map, /These particles explain the sourced local path; they are not live current measurements/);
+  assert.match(map, /totten-particles/);
+  assert.match(map, /layers\.warm/);
+  assert.match(map, /layers\.ice/);
+  assert.match(map, /layers\.global/);
 });

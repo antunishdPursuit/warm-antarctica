@@ -20,10 +20,10 @@ export async function generateMetadata(): Promise<Metadata> {
   const socialImage = `${protocol}://${host}/og.png`;
 
   return {
-    title: "Antarctica: Connected",
+    title: "Warm Antarctica",
     description: "A visual explainer of Antarctic change and East Coast sea level.",
     openGraph: {
-      title: "Antarctica: Connected",
+      title: "Warm Antarctica",
       description: "How Antarctica links to East Coast sea level.",
       images: [{ url: socialImage, width: 1200, height: 675 }],
     },
