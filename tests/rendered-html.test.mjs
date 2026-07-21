@@ -65,6 +65,7 @@ test("journey data keeps one source per stage and a shared duration", async () =
   assert.match(page, /Quick check/);
   assert.match(page, /Story mode/);
   assert.match(page, /setCheckOpen\(true\)/);
+  assert.match(page, /active === "water" && <section className="shelf-compare"/);
 });
 
 test("guided Amundsen particles stay local and respect reduced motion", async () => {
@@ -77,4 +78,5 @@ test("guided Amundsen particles stay local and respect reduced motion", async ()
   assert.match(map, /layers\.warm/);
   assert.match(map, /layers\.ice/);
   assert.match(map, /layers\.global/);
+  assert.match(map, /pulseProgress = \(pulseProgress \+ 0\.018\) % 1/);
 });

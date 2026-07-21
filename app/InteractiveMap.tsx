@@ -237,9 +237,9 @@ export function InteractiveMap({ active, region, layers, storyMode, onSelect, on
     }, 80);
     const pulseTimer = reducedMotion.current ? undefined : window.setInterval(() => {
       if (activeRef.current !== "ocean" || !layersRef.current.global) return;
-      pulseProgress = (pulseProgress + 0.012) % 1;
+      pulseProgress = (pulseProgress + 0.018) % 1;
       (instance.getSource("global-ocean-band-pulses") as maplibregl.GeoJSONSource | undefined)?.setData(ringPulseFeatures(globalOceanBands, pulseProgress));
-    }, 100);
+    }, 80);
     let lastScrollStep = 0;
     const handleStoryScroll = (event: WheelEvent) => {
       if (!storyModeRef.current || event.deltaY === 0 || Date.now() - lastScrollStep < 700) return;
